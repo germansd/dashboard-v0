@@ -1,0 +1,119 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Cliente {
+  id        Int       @id @default(autoincrement())
+  dni       String
+  nombre    String
+  apellidos String
+  email     String    @unique
+  direccion String
+  telefono  String
+  creadoEn  DateTime  @default(now())
+  pedidos   Pedido[]  // Un cliente puede tener muchos pedidos
+}
+
+model Pedido {
+  id        Int       @id @default(autoincrement())
+  fecha     DateTime  @default(now())
+  cliente   Cliente   @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  clienteId Int
+  lineas    LineaPedido[]
+  total     Float?
+  factura   Factura?  @relation(name: "PedidoFactura")
+}
+
+
+model Producto {
+  id          Int           @id @default(autoincrement())
+  nombre      String
+  descripcion String?
+  precio      Float
+  stock       Int
+  imagenUrl   String?       // <- Añadido para almacenar la URL de la imagen
+  creadoEn    DateTime      @default(now())
+  lineas      LineaPedido[] // Un producto puede estar en muchas líneas de pedido
+}
+model Factura {
+  id        Int      @id @default(autoincrement())
+  numero    String   @unique
+  pedidoId  Int      @unique
+  pedido    Pedido   @relation(name: "PedidoFactura", fields: [pedidoId], references: [id], onDelete: Cascade)
+  fecha     DateTime @default(now())
+  total     Float
+  pdfUrl    String?
+  createdAt DateTime @default(now())
+}
+
+model LineaPedido {
+  id         Int      @id @default(autoincrement())
+  pedido     Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  pedidoId   Int
+  producto   Producto @relation(fields: [productoId], references: [id])
+  productoId Int
+  cantidad   Int
+  precio     Float
+}
+
+
+model user {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  emailVerified Boolean
+  image         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  session       session[]
+  account       account[]
+}
+
+model session {
+  id         String   @id @default(cuid())
+  expiresAt  DateTime
+  token      String   @unique
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  ipAddress  String?
+  userAgent  String?
+  userId     String
+  user       user     @relation(fields: [userId], references: [id])
+}
+
+model account {
+  id                     String   @id @default(cuid())
+  accountId              String
+  providerId            String
+  userId                String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  user                  user     @relation(fields: [userId], references: [id])
+}
+
+model verification {
+  id        String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
